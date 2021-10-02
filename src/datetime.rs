@@ -1,14 +1,13 @@
-use {
-    Valid,
-    date::*,
-    time::*
-};
+use {date::*, time::*, Valid};
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct DateTime<D = YmdDate, T = GlobalTime>
-where D: Datelike, T: Timelike {
+where
+    D: Datelike,
+    T: Timelike,
+{
     pub date: D,
-    pub time: T
+    pub time: T,
 }
 
 impl_fromstr_parse!(DateTime<Date,       GlobalTime<HmsTime>>, datetime_global_hms);
@@ -36,22 +35,25 @@ impl_fromstr_parse!(DateTime<ApproxDate, ApproxGlobalTime>,    datetime_approx_g
 impl_fromstr_parse!(DateTime<ApproxDate, ApproxLocalTime>,     datetime_approx_local_approx);
 impl_fromstr_parse!(DateTime<ApproxDate, ApproxAnyTime>,       datetime_approx_any_approx);
 
-impl<D, T> Valid for DateTime<D, T> where
+impl<D, T> Valid for DateTime<D, T>
+where
     D: Datelike + Valid,
-    T: Timelike + Valid
+    T: Timelike + Valid,
 {
     fn is_valid(&self) -> bool {
-        self.date.is_valid() &&
-        self.time.is_valid()
+        self.date.is_valid() && self.time.is_valid()
     }
 }
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum PartialDateTime<D = ApproxDate, T = ApproxAnyTime>
-where D: Datelike, T: Timelike {
+where
+    D: Datelike,
+    T: Timelike,
+{
     Date(D),
     Time(T),
-    DateTime(DateTime<D, T>)
+    DateTime(DateTime<D, T>),
 }
 
 impl_fromstr_parse!(PartialDateTime<ApproxDate, ApproxAnyTime>, partial_datetime_approx_any_approx);
