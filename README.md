@@ -97,12 +97,14 @@ assert_eq!(
 Chrono support:
 
 ```rust
+#[cfg(feature = "chrono")]
 extern crate chrono;
 
 use std::str::FromStr;
 use iso_8601::*;
 
 fn main() {
+    #[cfg(feature = "chrono")]
     assert_eq!(
         chrono::DateTime::<chrono::Utc>::from(
             DateTime::<Date, GlobalTime>::from_str("2018-08-02T13:42:02Z").unwrap()
