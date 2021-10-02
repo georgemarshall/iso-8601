@@ -1,4 +1,4 @@
-use Valid;
+use crate::Valid;
 
 /// Local time (4.2.2.2)
 #[derive(Eq, PartialEq, Clone, Debug)]

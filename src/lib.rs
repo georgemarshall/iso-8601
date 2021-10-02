@@ -13,7 +13,7 @@ macro_rules! impl_fromstr_parse {
             type Err = ();
 
             fn from_str(s: &str) -> Result<Self, Self::Err> {
-                ::parse::$func(s.as_bytes()).map(|x| x.1).or(Err(()))
+                crate::parse::$func(s.as_bytes()).map(|x| x.1).or(Err(()))
             }
         }
     };
@@ -26,7 +26,7 @@ mod datetime;
 mod parse;
 mod time;
 
-pub use {date::*, datetime::*, time::*};
+pub use crate::{date::*, datetime::*, time::*};
 
 pub trait Valid {
     fn is_valid(&self) -> bool;

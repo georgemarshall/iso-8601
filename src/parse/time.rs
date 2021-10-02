@@ -1,6 +1,6 @@
 use super::*;
+use crate::time::*;
 use nom::character::is_digit;
-use time::*;
 
 named!(hour<u8>, map!(take_while_m_n!(2, 2, is_digit), buf_to_int));
 

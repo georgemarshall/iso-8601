@@ -1,6 +1,7 @@
 [package]
 name = "iso-8601"
 version = "0.4.1"
+edition = "2018"
 authors = ["Robin Stumm <serverkorken@gmail.com>"]
 description = "Fully compliant ISO 8601 parser."
 repository = "https://hg.sr.ht/~dermetfan/iso-8601"
