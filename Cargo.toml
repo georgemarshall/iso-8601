@@ -15,3 +15,6 @@ chrono-serde = ["chrono/serde", "serde"]
 nom = { version = "~6.2.1", features = ["regexp"] }
 chrono = { version = "~0.4.19", optional = true }
 serde = { version = "~1.0.126", optional = true }
+
+[dev-dependencies]
+chrono = { version = "~0.4.19" }
