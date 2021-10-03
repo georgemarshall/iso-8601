@@ -1,145 +1,179 @@
 use super::*;
 use crate::date::*;
-use nom::character::is_digit;
+use nom::{
+    branch::alt,
+    bytes::streaming::take_while_m_n,
+    character::is_digit,
+    character::streaming::char,
+    combinator::{complete, cond, map, opt},
+    IResult,
+};
 
-named!(
-    positive_century<u8>,
-    map!(take_while_m_n!(2, 2, is_digit), buf_to_int)
-);
+fn positive_century(i: &[u8]) -> IResult<&[u8], u8> {
+    map(take_while_m_n(2, 2, is_digit), buf_to_int)(i)
+}
 
-named!(
-    century<i8>,
-    do_parse!(sign: opt!(sign) >> century: positive_century >> (sign.unwrap_or(1) * century as i8))
-);
+fn century(i: &[u8]) -> IResult<&[u8], i8> {
+    let (i, sign) = opt(sign)(i)?;
+    let (i, century) = positive_century(i)?;
+    Ok((i, sign.unwrap_or(1) * century as i8))
+}
 
 // TODO support expanded year
-named!(
-    positive_year<u16>,
-    map!(take_while_m_n!(4, 4, is_digit), buf_to_int)
-);
+fn positive_year(i: &[u8]) -> IResult<&[u8], u16> {
+    map(take_while_m_n(4, 4, is_digit), buf_to_int)(i)
+}
 
-named!(
-    year<i16>,
-    do_parse!(sign: opt!(sign) >> year: positive_year >> (sign.unwrap_or(1) as i16 * year as i16))
-);
+fn year(i: &[u8]) -> IResult<&[u8], i16> {
+    let (i, sign) = opt(sign)(i)?;
+    let (i, year) = positive_year(i)?;
+    Ok((i, sign.unwrap_or(1) as i16 * year as i16))
+}
 
-named!(month<u8>, map!(take_while_m_n!(2, 2, is_digit), buf_to_int));
+fn month(i: &[u8]) -> IResult<&[u8], u8> {
+    map(take_while_m_n(2, 2, is_digit), buf_to_int)(i)
+}
 
-named!(day<u8>, map!(take_while_m_n!(2, 2, is_digit), buf_to_int));
+fn day(i: &[u8]) -> IResult<&[u8], u8> {
+    map(take_while_m_n(2, 2, is_digit), buf_to_int)(i)
+}
 
-named!(
-    year_week<u8>,
-    map!(take_while_m_n!(2, 2, is_digit), buf_to_int)
-);
+fn year_week(i: &[u8]) -> IResult<&[u8], u8> {
+    map(take_while_m_n(2, 2, is_digit), buf_to_int)(i)
+}
 
-named!(
-    year_day<u8>,
-    map!(take_while_m_n!(3, 3, is_digit), buf_to_int)
-);
+fn year_day(i: &[u8]) -> IResult<&[u8], u8> {
+    map(take_while_m_n(3, 3, is_digit), buf_to_int)(i)
+}
 
-named!(
-    week_day<u8>,
-    map!(take_while_m_n!(1, 1, is_digit), buf_to_int)
-);
+fn week_day(i: &[u8]) -> IResult<&[u8], u8> {
+    map(take_while_m_n(1, 1, is_digit), buf_to_int)(i)
+}
 
-named_args!(date_ymd_format(extended: bool) <YmdDate>, do_parse!(
-    year: year >>
-    cond!(extended, char!('-')) >>
-    month: month >>
-    cond!(extended, char!('-')) >>
-    day: day >>
-    (YmdDate { year, month, day })
-));
-named!(date_ymd_basic<YmdDate>, call!(date_ymd_format, false));
-named!(date_ymd_extended<YmdDate>, call!(date_ymd_format, true));
+fn date_ymd_format(i: &[u8], extended: bool) -> IResult<&[u8], YmdDate> {
+    let (i, year) = year(i)?;
+    let (i, _) = cond(extended, char('-'))(i)?;
+    let (i, month) = month(i)?;
+    let (i, _) = cond(extended, char('-'))(i)?;
+    let (i, day) = day(i)?;
+    Ok((i, YmdDate { year, month, day }))
+}
+fn date_ymd_basic(i: &[u8]) -> IResult<&[u8], YmdDate> {
+    date_ymd_format(i, false)
+}
+fn date_ymd_extended(i: &[u8]) -> IResult<&[u8], YmdDate> {
+    date_ymd_format(i, true)
+}
 
-named!(pub date_ymd <YmdDate>, alt!(
-    complete!(date_ymd_extended) |
-    complete!(date_ymd_basic)
-));
+pub fn date_ymd(i: &[u8]) -> IResult<&[u8], YmdDate> {
+    alt((complete(date_ymd_extended), complete(date_ymd_basic)))(i)
+}
 
-named_args!(date_wd_format(extended: bool) <WdDate>, do_parse!(
-    year: year >>
-    cond!(extended, char!('-')) >>
-    char!('W') >>
-    week: year_week >>
-    cond!(extended, char!('-')) >>
-    day: week_day >>
-    (WdDate { year, week, day })
-));
-named!(date_wd_basic<WdDate>, call!(date_wd_format, false));
-named!(date_wd_extended<WdDate>, call!(date_wd_format, true));
+fn date_wd_format(i: &[u8], extended: bool) -> IResult<&[u8], WdDate> {
+    let (i, year) = year(i)?;
+    let (i, _) = cond(extended, char('-'))(i)?;
+    let (i, _) = char('W')(i)?;
+    let (i, week) = year_week(i)?;
+    let (i, _) = cond(extended, char('-'))(i)?;
+    let (i, day) = week_day(i)?;
+    Ok((i, WdDate { year, week, day }))
+}
+fn date_wd_basic(i: &[u8]) -> IResult<&[u8], WdDate> {
+    date_wd_format(i, false)
+}
+fn date_wd_extended(i: &[u8]) -> IResult<&[u8], WdDate> {
+    date_wd_format(i, true)
+}
 
-named!(pub date_wd <WdDate>, alt!(
-   date_wd_extended |
-   date_wd_basic
-));
+pub fn date_wd(i: &[u8]) -> IResult<&[u8], WdDate> {
+    alt((date_wd_extended, date_wd_basic))(i)
+}
 
-named_args!(date_o_format(extended: bool) <ODate>, do_parse!(
-    year: year >>
-    cond!(extended, char!('-')) >>
-    day: year_day >>
-    (ODate {
-        year,
-        day: day.into()
-    })
-));
-named!(date_o_basic<ODate>, call!(date_o_format, false));
-named!(date_o_extended<ODate>, call!(date_o_format, true));
+fn date_o_format(i: &[u8], extended: bool) -> IResult<&[u8], ODate> {
+    let (i, year) = year(i)?;
+    let (i, _) = cond(extended, char('-'))(i)?;
+    let (i, day) = year_day(i)?;
+    Ok((
+        i,
+        ODate {
+            year,
+            day: day.into(),
+        },
+    ))
+}
+fn date_o_basic(i: &[u8]) -> IResult<&[u8], ODate> {
+    date_o_format(i, false)
+}
+fn date_o_extended(i: &[u8]) -> IResult<&[u8], ODate> {
+    date_o_format(i, true)
+}
 
-named!(pub date_o <ODate>, alt!(
-    date_o_extended |
-    date_o_basic
-));
+pub fn date_o(i: &[u8]) -> IResult<&[u8], ODate> {
+    alt((date_o_extended, date_o_basic))(i)
+}
 
-named!(pub date <Date>, alt!(
-    complete!(map!(date_wd, Date::WD)) |
-    complete!(map!(date_ymd_extended, Date::YMD)) |
-    complete!(map!(date_o_extended, Date::O)) |
-    complete!(map!(date_ymd_basic, Date::YMD)) |
-    complete!(map!(date_o_basic, Date::O))
-));
+pub fn date(i: &[u8]) -> IResult<&[u8], Date> {
+    alt((
+        complete(map(date_wd, Date::WD)),
+        complete(map(date_ymd_extended, Date::YMD)),
+        complete(map(date_o_extended, Date::O)),
+        complete(map(date_ymd_basic, Date::YMD)),
+        complete(map(date_o_basic, Date::O)),
+    ))(i)
+}
 
-named_args!(date_w_format(extended: bool) <WDate>, do_parse!(
-    year: year >>
-    cond!(extended, char!('-')) >>
-    char!('W') >>
-    week: year_week >>
-    (WDate { year, week })
-));
-named!(date_w_basic<WDate>, call!(date_w_format, false));
-named!(date_w_extended<WDate>, call!(date_w_format, true));
+fn date_w_format(i: &[u8], extended: bool) -> IResult<&[u8], WDate> {
+    let (i, year) = year(i)?;
+    let (i, _) = cond(extended, char('-'))(i)?;
+    let (i, _) = char('W')(i)?;
+    let (i, week) = year_week(i)?;
+    Ok((i, WDate { year, week }))
+}
+fn date_w_basic(i: &[u8]) -> IResult<&[u8], WDate> {
+    date_w_format(i, false)
+}
+fn date_w_extended(i: &[u8]) -> IResult<&[u8], WDate> {
+    date_w_format(i, true)
+}
 
-named!(pub date_w <WDate>, alt!(
-    date_w_extended |
-    date_w_basic
-));
+pub fn date_w(i: &[u8]) -> IResult<&[u8], WDate> {
+    alt((date_w_extended, date_w_basic))(i)
+}
 
-named_args!(date_ym_format(extended: bool) <YmDate>, do_parse!(
-    year: year >>
-    cond!(extended, char!('-')) >>
-    month: month >>
-    (YmDate { year, month })
-));
-named!(date_ym_basic<YmDate>, call!(date_ym_format, false));
-named!(date_ym_extended<YmDate>, call!(date_ym_format, true));
+fn date_ym_format(i: &[u8], extended: bool) -> IResult<&[u8], YmDate> {
+    let (i, year) = year(i)?;
+    let (i, _) = cond(extended, char('-'))(i)?;
+    let (i, month) = month(i)?;
+    Ok((i, YmDate { year, month }))
+}
+fn date_ym_basic(i: &[u8]) -> IResult<&[u8], YmDate> {
+    date_ym_format(i, false)
+}
+fn date_ym_extended(i: &[u8]) -> IResult<&[u8], YmDate> {
+    date_ym_format(i, true)
+}
 
-named!(pub date_ym <YmDate>, alt!(
-    date_ym_extended |
-    date_ym_basic
-));
+pub fn date_ym(i: &[u8]) -> IResult<&[u8], YmDate> {
+    alt((date_ym_extended, date_ym_basic))(i)
+}
 
-named!(pub date_y <YDate>, map!(year, |year| YDate { year }));
+pub fn date_y(i: &[u8]) -> IResult<&[u8], YDate> {
+    map(year, |year| YDate { year })(i)
+}
 
-named!(pub date_c <CDate>, map!(century, |century| CDate { century }));
+pub fn date_c(i: &[u8]) -> IResult<&[u8], CDate> {
+    map(century, |century| CDate { century })(i)
+}
 
-named!(pub date_approx <ApproxDate>, alt!(
-    complete!(map!(date, |x| x.into())) |
-    complete!(map!(date_w, ApproxDate::W)) |
-    complete!(map!(date_ym, ApproxDate::YM)) |
-    complete!(map!(date_y, ApproxDate::Y)) |
-    complete!(map!(date_c, ApproxDate::C))
-));
+pub fn date_approx(i: &[u8]) -> IResult<&[u8], ApproxDate> {
+    alt((
+        complete(map(date, |x| x.into())),
+        complete(map(date_w, ApproxDate::W)),
+        complete(map(date_ym, ApproxDate::YM)),
+        complete(map(date_y, ApproxDate::Y)),
+        complete(map(date_c, ApproxDate::C)),
+    ))(i)
+}
 
 #[cfg(test)]
 mod tests {

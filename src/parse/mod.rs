@@ -4,6 +4,14 @@ mod time;
 
 pub use self::{date::*, datetime::*, time::*};
 
+use nom::combinator::peek;
+use nom::{
+    branch::alt,
+    character::streaming::{char, one_of},
+    combinator::{map_opt, value},
+    number::complete::recognize_float,
+    IResult, ParseTo,
+};
 use std::ops::{AddAssign, MulAssign};
 
 fn buf_to_int<T>(buf: &[u8]) -> T
@@ -18,28 +26,21 @@ where
     sum
 }
 
-named!(
-    sign<i8>,
-    alt!(
-        one_of!("-\u{2212}\u{2010}") => { |_| -1 } |
-        char!('+')                   => { |_|  1 }
-    )
-);
+pub fn sign(i: &[u8]) -> IResult<&[u8], i8> {
+    alt((value(-1, one_of("-\u{2212}\u{2010}")), value(1, char('+'))))(i)
+}
 
-named!(
-    frac32<f32>,
-    do_parse!(
-        peek!(char!('.'))
-            >> fraction: flat_map!(nom::number::complete::recognize_float, parse_to!(f32))
-            >> (fraction)
-    )
-);
+fn frac32(i: &[u8]) -> IResult<&[u8], f32> {
+    let (i, _) = peek(char('.'))(i)?;
+    let (i, fraction) = map_opt(recognize_float, |s: &[u8]| s.parse_to())(i)?;
+    Ok((i, fraction))
+}
 
 #[cfg(test)]
 mod tests {
     use {
         nom::{
-            error::{Error, ErrorKind::Alt},
+            error::{Error, ErrorKind::Char},
             Err,
             Needed::Size,
         },
@@ -58,7 +59,7 @@ mod tests {
             super::sign(b" "),
             Err(Err::Error(Error {
                 input: &b" "[..],
-                code: Alt
+                code: Char
             }))
         );
     }

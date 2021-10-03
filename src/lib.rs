@@ -4,9 +4,6 @@ mod test_readme {
     pub struct ReadmeDoctests;
 }
 
-#[macro_use]
-extern crate nom;
-
 macro_rules! impl_fromstr_parse {
     ($ty:ty, $func:ident) => {
         impl ::std::str::FromStr for $ty {
