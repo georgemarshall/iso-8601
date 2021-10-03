@@ -13,6 +13,7 @@ license = "Apache-2.0"
 chrono-serde = ["chrono/serde", "serde"]
 
 [dependencies]
-nom = { version = "~6.2.1", features = ["regexp"] }
+nom = "7"
+nom-regex = "0.2"
 chrono = { version = "~0.4.19", optional = true }
 serde = { version = "~1.0.126", optional = true }

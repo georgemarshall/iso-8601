@@ -6,7 +6,7 @@ use nom::{
     combinator::{complete, cond, opt},
     IResult,
 };
-use nom::{lib::regex, regexp::bytes::re_match};
+use nom_regex::{bytes::re_match, lib::regex};
 
 macro_rules! datetime {
     (pub $name:ident, $date:ty, $date_parser:ident, $time:ty, $time_parser:ident) => {
