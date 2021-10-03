@@ -4,10 +4,7 @@ mod time;
 
 pub use self::{date::*, datetime::*, time::*};
 
-use {
-    nom,
-    std::ops::{AddAssign, MulAssign},
-};
+use std::ops::{AddAssign, MulAssign};
 
 fn buf_to_int<T>(buf: &[u8]) -> T
 where
